@@ -1,3 +1,5 @@
 from django.db import models
 
-# Create your models here.
+class CurrencyRate(models.Model) :
+    date = models.DateTimeField()
+    value = models.FloatField(max_length=6)
