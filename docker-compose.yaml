@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+
+  postgres:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=challengeuser
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=currencychallenge_db
+  
+  web:
+    build: .
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_USER=challengeuser
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_NAME=currencychallenge_db
+    depends_on:
+      - postgres
+
