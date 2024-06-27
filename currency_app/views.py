@@ -6,45 +6,40 @@ from datetime import timedelta
 import datetime
 import requests
 
-from .models import *
+from .models import CurrencyRate
+from .exceptions import ValidationError, APICommunicationError
 
 def get_currency_rate(request, start_date = "", end_date = ""):
-    
-    start_date_parsed, end_date_parsed = date_parser(start_date, end_date)
-    
-    if (start_date_parsed > end_date_parsed):
-        return HttpResponseBadRequest('Dates are invalid (start_date > end_date)')
+    try:
+        start_date_parsed, end_date_parsed = date_parser(start_date, end_date)
+    except ValidationError as e:
+        return JsonResponse({'message':e.serialize()}, status=e.status_code)
 
     currency_rates, new_dates = get_currencyrates_from_db(start_date_parsed, end_date_parsed)
 
-    print(currency_rates)
-    print(new_dates)
-
     if len(new_dates) != 0:
         for new_date in new_dates:
-            new_currency_rate = call_fankfurter_api(new_date, 'USD')
-            if new_currency_rate != 0:
-                currency_rates.append(new_currency_rate)
+            try:
+                new_currency_rate = call_fankfurter_api(new_date, 'USD')
+                if new_currency_rate != 0:
+                    currency_rates.append(new_currency_rate)
+            except APICommunicationError as e:
+                return JsonResponse({'message':e.serialize()}, status=e.status_code)
 
     final_rate = 0
 
-    print(currency_rates)
-    print(len(currency_rates))
-
     for currency_rate in currency_rates:
         final_rate = final_rate + currency_rate
-    
-    print(final_rate)
 
     if final_rate != 0:      
         final_rate = final_rate / len(currency_rates)
 
     final_rate_dict = {"Rate (Averaged)": final_rate, "Start Date": start_date, "End Date": end_date}
 
-    return JsonResponse(final_rate_dict)   
-    
-def date_parser(start_date_str, end_date_str):
+    return JsonResponse(final_rate_dict)
 
+
+def date_parser(start_date_str, end_date_str):
     if not start_date_str and not end_date_str:
         start_date = end_date = datetime.datetime.now()
         return start_date, end_date
@@ -52,8 +47,17 @@ def date_parser(start_date_str, end_date_str):
     elif not end_date_str:
         end_date_str = start_date_str
 
-    start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
-    end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    try:
+        start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise ValidationError("Invalid date format for start or end date. Use the YYYY-MM-DD format.")
+    
+    if start_date > end_date:
+        raise ValidationError("The start date cannot be larger than the end date.")
+    
+    if start_date > datetime.date.today() or end_date > datetime.date.today():
+        raise ValidationError(f"Invalid dates. Dates cannot be larger than today's date: {datetime.date.today()}")
     
     return start_date, end_date
 
@@ -102,10 +106,8 @@ def call_fankfurter_api(date, currency):
 
         return currency_rate
     
-    except requests.exceptions.RequestException as e:
-
-        print(f"Error: {e}")
-        print("Request was not successful")
+    except requests.exceptions.RequestException:
+        raise APICommunicationError('Request was not successful')
 
 def save_currency_rates_db(currency_rate_complete_json, currency):
     
