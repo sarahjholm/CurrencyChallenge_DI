@@ -18,7 +18,7 @@ This command should download and start all the services and networks.
 Once Docker is up and running, the following endpoints are made available:
 
 1) `http://localhost:8000/currencyapi/` : To search the latest currency rate of USD against EUR
-2) `http://localhost:8000/currencyapi/<str:start_date>` : To search for the currency rate of a specific date
-3) `http://localhost:8000/currencyapi/<str:start_date>&<str:end_date>` : To search for the currency rate within that range of dates
+2) `http://localhost:8000/currencyapi/{start_date}` : To search for the currency rate of a specific date
+3) `http://localhost:8000/currencyapi/{end_date}` : To search for the currency rate within that range of dates
 
 Dates must be written in the following format: YYYY-MM-DD
