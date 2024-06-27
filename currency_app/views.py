@@ -1,24 +1,14 @@
-from django.shortcuts import render
-from django.core import serializers
-from django.utils import timezone
-
-from django.http import HttpResponse
 from django.http import JsonResponse
 from django.http import HttpResponseBadRequest
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 import datetime
 import requests
-import json
 
 from .models import *
-from .serializers import *
 
 def get_currency_rate(request, start_date = "", end_date = ""):
-
-    #if not date_validator(start_date, end_date):
-    #    return HttpResponseBadRequest('<h1>Dates are invalid (insert start and end date, or neither)</h1>')
     
     start_date_parsed, end_date_parsed = date_parser(start_date, end_date)
     
@@ -51,18 +41,7 @@ def get_currency_rate(request, start_date = "", end_date = ""):
 
     final_rate_dict = {"Rate (Averaged)": final_rate, "Start Date": start_date, "End Date": end_date}
 
-    return JsonResponse(final_rate_dict)
-
-""""
-def date_validator(start_date_str, end_date_str):
-    if not start_date_str or not end_date_str:
-        return False
-    return True
-    if ((start_date_str == "" and end_date_str != "") or (start_date_str != "" and end_date_str == "")):
-        return False
-    elif (start_date_str == "" and end_date_str == ""):
-        return True
-"""    
+    return JsonResponse(final_rate_dict)   
     
 def date_parser(start_date_str, end_date_str):
 
